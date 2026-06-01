@@ -100,8 +100,12 @@ def create_order(db: Session, order_data: schemas.OrderCreate):
     items_to_create = []
 
     # Using with_for_update() inside transaction prevents race conditions on stock check
+    is_sqlite = db.bind.dialect.name == 'sqlite'
     for item in order_data.items:
-        product = db.query(models.Product).with_for_update().filter(models.Product.id == item.product_id).first()
+        query = db.query(models.Product).filter(models.Product.id == item.product_id)
+        if not is_sqlite:
+            query = query.with_for_update()
+        product = query.first()
         if not product:
             raise EntityNotFoundException(f"Product with ID {item.product_id} does not exist.")
         
@@ -143,8 +147,12 @@ def delete_order(db: Session, order_id: int):
         return None
     
     # Restore stock for each item
+    is_sqlite = db.bind.dialect.name == 'sqlite'
     for item in db_order.items:
-        product = db.query(models.Product).with_for_update().filter(models.Product.id == item.product_id).first()
+        query = db.query(models.Product).filter(models.Product.id == item.product_id)
+        if not is_sqlite:
+            query = query.with_for_update()
+        product = query.first()
         if product:
             product.quantity += item.quantity
             
