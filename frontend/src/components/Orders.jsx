@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Eye, Trash2, Calendar, ShoppingCart, DollarSign, User, AlertCircle } from 'lucide-react';
+import { Plus, Eye, Trash2, Calendar, ShoppingCart, DollarSign, User, AlertCircle, X } from 'lucide-react';
 import Modal from './Modal';
 
 export default function Orders({ orders, products, customers, onCreate, onDelete }) {

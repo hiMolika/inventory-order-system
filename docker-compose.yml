@@ -3,27 +3,31 @@ version: '3.8'
 services:
   db:
     image: postgres:15-alpine
-    container_name: inventory-db
+    container_name: inventory_db
+    restart: always
     environment:
-      - POSTGRES_DB=inventory_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=secure_postgres_pass_123
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-inventory_db}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d inventory_db"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-inventory_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   backend:
-    build: ./backend
-    container_name: inventory-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: inventory_backend
+    restart: always
     environment:
-      - DATABASE_URL=postgresql://postgres:secure_postgres_pass_123@db:5432/inventory_db
-      - PORT=8000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-inventory_db}
+      PORT: 8000
     ports:
       - "8000:8000"
     depends_on:
@@ -33,14 +37,15 @@ services:
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://localhost:8000
-    container_name: inventory-frontend
+        VITE_API_URL: http://localhost:8000
+    container_name: inventory_frontend
+    restart: always
     ports:
-      - "3000:80"
+      - "80:80"
     depends_on:
       - backend
 
 volumes:
   postgres_data:
-    name: postgres_inventory_data
